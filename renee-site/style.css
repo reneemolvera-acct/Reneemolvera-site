@@ -1,0 +1,295 @@
+/* ---------- Design tokens ---------- */
+:root {
+  --tcu-purple: #4d1979;
+  --tcu-purple-dark: #3b125d;
+  --tcu-purple-light: #f4eef9;
+  --page-gray: #f3f4f6;
+  --border-gray: #d1d5db;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+  --white: #ffffff;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--text-dark);
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  font-family: 'Source Serif 4', serif;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 0.4em;
+}
+
+h1 { font-size: 2.6rem; line-height: 1.15; }
+h2 { font-size: 1.7rem; }
+h3 { font-size: 1.2rem; }
+
+p { color: var(--text-muted); margin: 0 0 1em; }
+
+a { color: var(--tcu-purple-dark); }
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tcu-purple);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ---------- Layout shell ---------- */
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ---------- Nav bar ---------- */
+header.site-header {
+  border-bottom: 1px solid var(--border-gray);
+  background: var(--white);
+}
+
+.nav-row {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.site-name {
+  font-family: 'Source Serif 4', serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--text-dark);
+  text-decoration: none;
+}
+
+nav.site-nav { display: flex; gap: 28px; }
+
+nav.site-nav a {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+
+nav.site-nav a:hover { color: var(--text-dark); }
+
+nav.site-nav a.active {
+  color: var(--text-dark);
+  border-bottom-color: var(--tcu-purple);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: 72px 0 56px;
+  border-bottom: 1px solid var(--border-gray);
+  background: var(--tcu-purple-light);
+  margin: 0 -28px;
+  padding-left: 28px;
+  padding-right: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 280px;
+}
+
+.hero-headshot {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 4px solid var(--white);
+  box-shadow: 0 6px 18px rgba(77, 25, 121, 0.18);
+}
+
+.hero p.lede {
+  font-size: 1.15rem;
+  max-width: 55ch;
+}
+
+.button {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 12px 22px;
+  background: var(--tcu-purple);
+  color: var(--white);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  border-radius: var(--radius);
+}
+
+.button:hover { background: var(--tcu-purple-dark); }
+
+.button.ghost {
+  background: transparent;
+  border: 1px solid var(--border-gray);
+  color: var(--text-dark);
+}
+
+/* ---------- Generic section ---------- */
+section.page-section {
+  padding: 56px 0;
+}
+
+section.page-section + section.page-section {
+  border-top: 1px solid var(--border-gray);
+}
+
+/* ---------- App catalog cards (signature element) ---------- */
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
+  margin-top: 8px;
+}
+
+.catalog-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--border-gray);
+  border-top: 3px dashed var(--tcu-purple);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 22px 20px 20px;
+  text-decoration: none;
+  display: block;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.catalog-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(77, 25, 121, 0.12);
+}
+
+.catalog-card .tab {
+  position: absolute;
+  top: -13px;
+  left: 20px;
+  background: var(--tcu-purple);
+  color: var(--white);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+}
+
+.catalog-card h3 {
+  margin-top: 10px;
+  color: var(--text-dark);
+}
+
+.catalog-card p {
+  font-size: 0.92rem;
+  margin-bottom: 0.6em;
+}
+
+.catalog-card .stamp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--tcu-purple-dark);
+  border: 1px solid var(--tcu-purple);
+  border-radius: 3px;
+  padding: 2px 8px;
+  display: inline-block;
+  transform: rotate(-2deg);
+}
+
+/* ---------- Technologies grid ---------- */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.tech-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--page-gray);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.tech-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  color: var(--white);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tech-info h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.tech-info p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+/* ---------- Contact ---------- */
+.contact-list a { display: block; margin-bottom: 10px; color: var(--text-dark); }
+
+/* ---------- Footer ---------- */
+footer.site-footer {
+  border-top: 1px solid var(--border-gray);
+  padding: 26px 0 40px;
+  background: var(--page-gray);
+}
+
+footer.site-footer p {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---------- Focus states & mobile ---------- */
+a:focus-visible, .button:focus-visible {
+  outline: 2px solid var(--tcu-purple);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  h1 { font-size: 2rem; }
+  .nav-row { flex-direction: column; align-items: flex-start; }
+  nav.site-nav { gap: 18px; }
+  .hero { margin: 0; padding-left: 0; padding-right: 0; }
+}
