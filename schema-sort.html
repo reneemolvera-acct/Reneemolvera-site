@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Practice game for data storage types and database schemas.">
+<title>Store &amp; Schema Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+html{color-scheme:light}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Layout: one centered play column; a scenario "record" card above three sorting bins, feedback slides in below. */
+:root{
+  --bg:#EEF2F5; --surface:#FFFFFF; --ink:#16232E; --muted:#5A6B78; --line:#D3DCE3;
+  --wh:#1D4ED8; --wh-soft:#E0E8FD;      /* warehouse / star  */
+  --lk:#0F766E; --lk-soft:#D5F3EE;      /* lake / snowflake */
+  --mt:#B45309; --mt-soft:#FCEBD3;      /* mart / galaxy */
+  --good:#15803D; --good-soft:#DCF5E3; --bad:#B91C1C; --bad-soft:#FBE3E3;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E161D; --surface:#17222C; --ink:#E6EDF2; --muted:#9AAAB6; --line:#2A3946;
+  --wh:#7EA2FF; --wh-soft:#1A2A52; --lk:#4FD1C0; --lk-soft:#0F3633; --mt:#F4A54B; --mt-soft:#45290C;
+  --good:#5BD58A; --good-soft:#123521; --bad:#FF8A8A; --bad-soft:#431818; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E161D; --surface:#17222C; --ink:#E6EDF2; --muted:#9AAAB6; --line:#2A3946;
+  --wh:#7EA2FF; --wh-soft:#1A2A52; --lk:#4FD1C0; --lk-soft:#0F3633; --mt:#F4A54B; --mt-soft:#45290C;
+  --good:#5BD58A; --good-soft:#123521; --bad:#FF8A8A; --bad-soft:#431818; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);font-stretch:112%;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(30px,6vw,44px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:800}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--wh);outline-offset:3px}
+
+/* ---------- start screen ---------- */
+.intro{display:flex;flex-direction:column;gap:10px}
+.intro p{color:var(--muted);max-width:60ch}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.mode{background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:18px;text-align:left;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+.mode:hover{border-color:var(--ink);transform:translateY(-2px)}
+.mode .bins-mini{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:99px;font-weight:500}
+.c-a{background:var(--wh-soft);color:var(--wh)} .c-b{background:var(--lk-soft);color:var(--lk)} .c-c{background:var(--mt-soft);color:var(--mt)}
+.mode p{color:var(--muted);font-size:15px}
+.best{font-family:var(--mono);font-size:12px;color:var(--muted)}
+details.gloss{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 18px}
+details.gloss summary{cursor:pointer;padding:12px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between}
+details.gloss summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+details.gloss[open] summary::after{content:"–"}
+.gloss dl{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:10px 16px;margin:0 0 16px}
+.gloss dt{font-family:var(--mono);font-size:14px;font-weight:500;padding-top:2px}
+.gloss dd{margin:0;font-size:15px;color:var(--muted)}
+.gloss .grp{grid-column:1/-1;font-family:var(--display);font-stretch:112%;font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+@media (max-width:480px){.gloss dl{grid-template-columns:1fr;gap:2px}.gloss dd{margin-bottom:10px}}
+
+/* ---------- play screen ---------- */
+.hud{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hud .stat{display:flex;flex-direction:column}
+.hud .num{font-family:var(--display);font-stretch:112%;font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;line-height:1}
+.hud .spacer{flex:1}
+.quit{background:none;border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:14px;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+
+.record{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.record header{display:flex;justify-content:space-between;gap:12px;padding:10px 18px;border-bottom:1px dashed var(--line);font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.record .text{padding:22px 18px 24px;font-size:clamp(18px,2.6vw,21px);line-height:1.45;min-height:120px}
+.record .ask{padding:0 18px 18px;color:var(--muted);font-size:15px}
+
+.bins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bin{--c:var(--wh);--s:var(--wh-soft);background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:132px;transition:border-color .15s,background .15s,transform .1s}
+.bin.b1{--c:var(--lk);--s:var(--lk-soft)} .bin.b2{--c:var(--mt);--s:var(--mt-soft)}
+.bin:hover:not(:disabled){border-color:var(--c);background:var(--s)}
+.bin:active:not(:disabled){transform:scale(.97)}
+.bin svg{width:56px;height:44px;color:var(--c)}
+.bin .lbl{font-family:var(--display);font-stretch:112%;font-weight:800;font-size:16px;text-align:center}
+.bin .key{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.bin:disabled{cursor:default}
+.bin.right{border-color:var(--good);background:var(--good-soft)}
+.bin.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.bin.dim{opacity:.45}
+@media (max-width:420px){.bin{min-height:112px;padding:10px 4px}.bin svg{width:44px;height:36px}.bin .lbl{font-size:14px}.bin .key{display:none}}
+
+.feedback{border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;border:2px solid}
+.feedback.ok{background:var(--good-soft);border-color:var(--good)}
+.feedback.no{background:var(--bad-soft);border-color:var(--bad)}
+.feedback .verdict{font-family:var(--display);font-stretch:112%;font-weight:800;font-size:19px}
+.feedback.ok .verdict{color:var(--good)} .feedback.no .verdict{color:var(--bad)}
+.feedback p{font-size:16px}
+.primary{align-self:flex-start;background:var(--ink);color:var(--bg);border:none;border-radius:10px;padding:11px 20px;font-weight:700}
+.primary:hover{opacity:.9}
+@media (prefers-reduced-motion:no-preference){.feedback{animation:rise .2s ease-out}.record{animation:rise .25s ease-out}}
+@keyframes rise{from{transform:translateY(6px);opacity:.4}to{transform:none;opacity:1}}
+
+/* ---------- results ---------- */
+.score-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 18px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}
+.score-card .big{font-family:var(--display);font-stretch:112%;font-weight:800;font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+.score-card .stat{display:flex;flex-direction:column;gap:4px}
+.msg{font-size:18px}
+.review{display:flex;flex-direction:column;gap:10px}
+.miss{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.miss .ans{font-family:var(--mono);font-size:13px}
+.miss .ans b{color:var(--good)} .miss .ans s{color:var(--bad)}
+.miss p.why{color:var(--muted);font-size:15px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.ghost{background:none;border:2px solid var(--line);border-radius:10px;padding:9px 18px;font-weight:700}
+.ghost:hover{border-color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<!-- bin icons: each one draws the shape of the concept -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-warehouse" viewBox="0 0 56 44"><path d="M4 18 28 5l24 13v22H4z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><g fill="currentColor"><rect x="12" y="22" width="9" height="7" rx="1"/><rect x="23.5" y="22" width="9" height="7" rx="1"/><rect x="35" y="22" width="9" height="7" rx="1"/><rect x="12" y="31" width="9" height="7" rx="1"/><rect x="23.5" y="31" width="9" height="7" rx="1"/><rect x="35" y="31" width="9" height="7" rx="1"/></g></symbol>
+    <symbol id="i-lake" viewBox="0 0 56 44"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 16c4-4 8-4 12 0s8 4 12 0 8-4 12 0 8 4 12 0"/><path d="M4 26c4-4 8-4 12 0s8 4 12 0 8-4 12 0 8 4 12 0"/><path d="M4 36c4-4 8-4 12 0s8 4 12 0 8-4 12 0 8 4 12 0"/></g><g fill="currentColor"><rect x="9" y="4" width="5" height="5" rx="1" transform="rotate(15 11 6)"/><circle cx="30" cy="7" r="2.6"/><path d="m44 3 3 6h-6z"/></g></symbol>
+    <symbol id="i-mart" viewBox="0 0 56 44"><path d="M4 22 28 9l24 13v18H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 3" stroke-linejoin="round" opacity=".55"/><rect x="22" y="24" width="12" height="16" rx="1.5" fill="currentColor"/><path d="M22 30h12" stroke="var(--surface)" stroke-width="1.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 56 44"><g stroke="currentColor" stroke-width="2.2"><path d="M28 22V6M28 22v16M28 22H8M28 22h20"/></g><rect x="21" y="16" width="14" height="12" rx="2" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2"><rect x="22" y="1.5" width="12" height="7" rx="1.5" fill="var(--surface)"/><rect x="22" y="35.5" width="12" height="7" rx="1.5" fill="var(--surface)"/><rect x="1.5" y="18.5" width="11" height="7" rx="1.5" fill="var(--surface)"/><rect x="43.5" y="18.5" width="11" height="7" rx="1.5" fill="var(--surface)"/></g></symbol>
+    <symbol id="i-snow" viewBox="0 0 56 44"><g stroke="currentColor" stroke-width="2"><path d="M22 22H8M22 22h12M40 22h8M22 22V8M22 22v14M42 22v-9M8 22v-10"/></g><rect x="16" y="17" width="12" height="10" rx="2" fill="currentColor"/><g fill="var(--surface)" stroke="currentColor" stroke-width="2"><rect x="17" y="2" width="10" height="6" rx="1.5"/><rect x="17" y="36" width="10" height="6" rx="1.5"/><rect x="2" y="19" width="9" height="6" rx="1.5"/><rect x="33" y="19" width="9" height="6" rx="1.5"/><rect x="37" y="7" width="10" height="6" rx="1.5"/><rect x="45" y="19" width="9" height="6" rx="1.5"/><rect x="3" y="7" width="10" height="6" rx="1.5"/></g></symbol>
+    <symbol id="i-galaxy" viewBox="0 0 56 44"><g stroke="currentColor" stroke-width="2"><path d="M16 22h24M16 22V7M16 22v15M40 22V7M40 22v15M16 7h24M16 37h24"/></g><rect x="9" y="16" width="13" height="12" rx="2" fill="currentColor"/><rect x="34" y="16" width="13" height="12" rx="2" fill="currentColor"/><g fill="var(--surface)" stroke="currentColor" stroke-width="2"><rect x="23" y="3" width="10" height="7" rx="1.5"/><rect x="23" y="34" width="10" height="7" rx="1.5"/></g></symbol>
+  </defs>
+</svg>
+
+<script>
+const SETS = {
+  storage: {name:"Storage type", ask:"Where does this data live?", bins:[
+    {id:"warehouse",label:"Data warehouse",icon:"i-warehouse"},
+    {id:"lake",label:"Data lake",icon:"i-lake"},
+    {id:"mart",label:"Data mart",icon:"i-mart"}]},
+  schema: {name:"Schema", ask:"Which schema is this?", bins:[
+    {id:"star",label:"Star",icon:"i-star"},
+    {id:"snowflake",label:"Snowflake",icon:"i-snow"},
+    {id:"galaxy",label:"Galaxy",icon:"i-galaxy"}]}
+};
+
+const CARDS = [
+  // ---- storage ----
+  {set:"storage",a:"warehouse",t:"Five years of cleaned general ledger, AR and AP data, consolidated from three different ERP systems and used for trend reporting.",
+   why:"Cleaned, integrated, historical data from many source systems, organized for reporting, is the definition of a data warehouse."},
+  {set:"storage",a:"lake",t:"Raw vendor invoice PDFs, customer emails and call-center recordings are kept in their original formats in case analysts want them later.",
+   why:"Raw data in many formats (structured and unstructured), stored as-is with no transformation, belongs in a data lake."},
+  {set:"storage",a:"mart",t:"The tax department gets its own small repository containing only the warehouse data it needs for state apportionment.",
+   why:"A focused subset of warehouse data built for one department is a data mart."},
+  {set:"storage",a:"warehouse",t:"Data must be cleaned, validated and fit the predefined tables before it can be loaded. This is called schema-on-write.",
+   why:"Schema-on-write (structure applied before loading) is how a data warehouse works. A lake uses schema-on-read."},
+  {set:"storage",a:"lake",t:"Sensor feeds from forklifts are stored exactly as they arrive. Data scientists decide how to structure the data only when they query it.",
+   why:"Applying structure when the data is read (schema-on-read) is the hallmark of a data lake."},
+  {set:"storage",a:"mart",t:"Payroll managers want faster queries, so IT builds a store holding only payroll history, refreshed nightly from the enterprise repository.",
+   why:"A smaller store holding one subject area for one user group, fed from the central repository, is a data mart."},
+  {set:"storage",a:"lake",t:"Website clickstream logs, social media posts and product images are dumped into low-cost storage with no predefined schema.",
+   why:"Large volumes of unstructured and semi-structured data with no predefined schema point to a data lake."},
+  {set:"storage",a:"warehouse",t:"An enterprise-wide, subject-oriented, nonvolatile repository of historical data that serves as the organization's single source of truth for reporting.",
+   why:"Subject-oriented, integrated, nonvolatile and historical is the classic description of a data warehouse."},
+  {set:"storage",a:"mart",t:"Internal audit gets a dedicated store with only journal entry and user-access data, drawn from the company's central repository.",
+   why:"A department-specific slice of the central repository is a data mart, even when the department is internal audit."},
+  {set:"storage",a:"lake",t:"Scanned contracts, photos of receipts and miscellaneous spreadsheets are collected without being cleaned or transformed.",
+   why:"Untransformed data in mixed formats is stored in a data lake."},
+  {set:"storage",a:"warehouse",t:"The CFO wants consolidated quarterly results for every subsidiary in one cleaned, organized repository that all departments can report from.",
+   why:"Enterprise-wide, consolidated and cleaned data for reporting across the whole company belongs in a data warehouse. A mart would serve only one area."},
+  {set:"storage",a:"mart",t:"The sales team's dashboard reads from a small store holding only sales and customer data, so the team doesn't have to search the entire enterprise repository.",
+   why:"A smaller store scoped to one business function is a data mart."},
+  // ---- schema ----
+  {set:"schema",a:"star",t:"A Sales fact table links directly to Customer, Product, Date and Store dimension tables. None of those dimension tables links to anything else.",
+   why:"One fact table with dimension tables one level away, and no sub-tables, is a star schema."},
+  {set:"schema",a:"snowflake",t:"The Product dimension has been split into separate Product, Category and Department tables, each linked by a key.",
+   why:"Breaking a dimension into linked sub-tables (normalizing it) creates a snowflake schema."},
+  {set:"schema",a:"galaxy",t:"A Sales fact table and a Returns fact table both link to the same Customer, Product and Date dimension tables.",
+   why:"Two or more fact tables sharing dimension tables is a galaxy schema, also called a fact constellation."},
+  {set:"schema",a:"star",t:"The designer chose the simplest structure with the fewest joins for fast queries, accepting that some descriptive data will repeat.",
+   why:"Simplicity and query speed, at the cost of some redundancy, is the star schema trade-off."},
+  {set:"schema",a:"snowflake",t:"The designer normalized the dimension tables to cut down on repeated data, accepting that queries will need more joins.",
+   why:"Less redundancy but more joins is the snowflake schema trade-off."},
+  {set:"schema",a:"galaxy",t:"This schema is also known as a fact constellation.",
+   why:"Fact constellation is another name for a galaxy schema, where several fact tables share dimensions."},
+  {set:"schema",a:"star",t:"The Customer dimension holds Name, City, State and Country together in a single table that links straight to the fact table.",
+   why:"Keeping all the descriptive attributes in one denormalized dimension table is characteristic of a star schema."},
+  {set:"schema",a:"snowflake",t:"The Store dimension links to a separate Region table, and the Region table links to a separate Country table.",
+   why:"A chain of tables branching two or more levels out from the fact table is a snowflake schema."},
+  {set:"schema",a:"galaxy",t:"An Inventory fact table and a Purchases fact table share the same Date and Product dimension tables.",
+   why:"Multiple fact tables sharing dimensions make this a galaxy schema."},
+  {set:"schema",a:"snowflake",t:"In the diagram, some branches reach two or three tables away from the central fact table.",
+   why:"Branches that extend beyond one level, like the arms of a snowflake, mean the dimensions have been normalized."}
+];
+
+const MODES = {
+  storage:{title:"Storage sort",desc:"Warehouse, lake or mart? 10 scenarios.",sets:["storage"],n:10},
+  schema:{title:"Schema sort",desc:"Star, snowflake or galaxy? 10 scenarios.",sets:["schema"],n:10},
+  mixed:{title:"Mixed challenge",desc:"Both kinds of question, shuffled together. 12 scenarios.",sets:["storage","schema"],n:12}
+};
+
+const app = document.getElementById("app");
+let S = null; // game state
+
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function labelOf(set,id){return SETS[set].bins.find(b=>b.id===id).label}
+
+function deal(modeKey){
+  const m=MODES[modeKey];
+  let deck;
+  if(m.sets.length===1) deck=shuffle(CARDS.filter(c=>c.set===m.sets[0])).slice(0,m.n);
+  else deck=shuffle([...shuffle(CARDS.filter(c=>c.set==="storage")).slice(0,m.n/2),...shuffle(CARDS.filter(c=>c.set==="schema")).slice(0,m.n/2)]);
+  return deck.map(c=>CARDS.indexOf(c));
+}
+
+function startGame(modeKey){
+  S={screen:"play",mode:modeKey,deck:deal(modeKey),i:0,score:0,streak:0,bestStreak:0,correct:0,picked:null,misses:[]};
+  render();
+}
+
+function render(){
+  if(!S||S.screen==="start") return renderStart();
+  if(S.screen==="play") return renderPlay();
+  return renderResults();
+}
+
+function renderStart(){
+  S={screen:"start"};
+  const modeBtns=Object.entries(MODES).map(([k,m])=>{
+    const sets=m.sets.flatMap(s=>SETS[s].bins.map((b,i)=>`<span class="chip c-${"abc"[i]}">${b.label}</span>`)).join("");
+    const best=store("best-"+k);
+    return `<button class="mode" id="mode-${k}" data-mode="${k}"><h2>${m.title}</h2><p>${m.desc}</p><div class="bins-mini">${sets}</div>${best?`<span class="best">Your best: ${best} pts</span>`:""}</button>`;
+  }).join("");
+  app.innerHTML=`
+  <div class="intro">
+    <span class="eyebrow">CPA Exam · ISC · Data management</span>
+    <h1>Store &amp; Schema Sort</h1>
+    <p>Read each scenario and sort it into the right bin. You'll see why after every answer. Correct answers earn 100 points, and streaks earn bonus points.</p>
+  </div>
+  <div class="modes">${modeBtns}</div>
+  <details class="gloss" id="gloss">
+    <summary>Review the key terms first</summary>
+    <dl>
+      <div class="grp">Storage types</div>
+      <dt>Data warehouse</dt><dd>Central repository of cleaned, integrated, historical data from many systems, built for reporting. Structure is applied before loading (schema-on-write).</dd>
+      <dt>Data lake</dt><dd>Large store of raw data in any format (structured, semi-structured, unstructured), kept as-is. Structure is applied when the data is used (schema-on-read).</dd>
+      <dt>Data mart</dt><dd>Smaller subset of warehouse data focused on one department or subject, such as sales or payroll.</dd>
+      <div class="grp">Schemas</div>
+      <dt>Fact table</dt><dd>Central table of transactions and measures, such as each sale and its amount.</dd>
+      <dt>Dimension table</dt><dd>Descriptive table linked to the fact table, such as Customer, Product or Date.</dd>
+      <dt>Star</dt><dd>One fact table with dimension tables linked directly to it. Simple and fast, with some repeated data.</dd>
+      <dt>Snowflake</dt><dd>A star whose dimensions are normalized into linked sub-tables. Less repetition, more joins.</dd>
+      <dt>Galaxy</dt><dd>Two or more fact tables sharing dimension tables. Also called a fact constellation.</dd>
+    </dl>
+  </details>`;
+  app.querySelectorAll(".mode").forEach(b=>b.onclick=()=>startGame(b.dataset.mode));
+}
+
+function renderPlay(){
+  const card=CARDS[S.deck[S.i]], set=SETS[card.set], n=S.deck.length, answered=S.picked!==null;
+  const bins=set.bins.map((b,k)=>{
+    let cls="bin"+(k?" b"+k:"");
+    if(answered){ if(b.id===card.a) cls+=" right"; else if(b.id===S.picked) cls+=" wrong"; else cls+=" dim"; }
+    return `<button class="${cls}" id="bin-${k}" data-id="${b.id}" ${answered?"disabled":""} aria-label="${b.label}"><svg><use href="#${b.icon}"/></svg><span class="lbl">${b.label}</span><span class="key">press ${k+1}</span></button>`;
+  }).join("");
+  const ok=answered&&S.picked===card.a;
+  const fb=answered?`<div class="feedback ${ok?"ok":"no"}" role="status">
+      <span class="verdict">${ok?(S.streak>1?`Correct · ${S.streak} in a row`:"Correct"):`Not quite. It's ${esc(labelOf(card.set,card.a))}.`}</span>
+      <p>${esc(card.why)}</p>
+      <button class="primary" id="next">${S.i+1<n?"Next scenario":"See results"}</button></div>`:"";
+  app.innerHTML=`
+  <div class="hud">
+    <div class="stat"><span class="eyebrow">Score</span><span class="num">${S.score}</span></div>
+    <div class="stat"><span class="eyebrow">Streak</span><span class="num">${S.streak}</span></div>
+    <div class="spacer"></div>
+    <button class="quit" id="quit">Quit</button>
+  </div>
+  <div class="bar" aria-hidden="true"><i style="width:${((S.i+(answered?1:0))/n)*100}%"></i></div>
+  <article class="record">
+    <header><span>Scenario ${S.i+1} of ${n}</span><span>${set.name}</span></header>
+    <p class="text">${esc(card.t)}</p>
+    <p class="ask">${set.ask}</p>
+  </article>
+  <div class="bins">${bins}</div>
+  ${fb}`;
+  app.querySelectorAll(".bin:not(:disabled)").forEach(b=>b.onclick=()=>answer(b.dataset.id));
+  document.getElementById("quit").onclick=()=>{S=null;render()};
+  const nx=document.getElementById("next"); if(nx){nx.onclick=next; nx.focus({preventScroll:true}); nx.scrollIntoView({block:"nearest",behavior:"smooth"});}
+}
+
+function answer(id){
+  if(S.picked!==null) return;
+  const card=CARDS[S.deck[S.i]];
+  S.picked=id;
+  if(id===card.a){ S.streak++; S.correct++; S.bestStreak=Math.max(S.bestStreak,S.streak); S.score+=100+(S.streak>1?Math.min(S.streak-1,5)*20:0); }
+  else { S.streak=0; S.misses.push({idx:S.deck[S.i],picked:id}); }
+  render();
+}
+function next(){
+  S.picked=null; S.i++;
+  if(S.i>=S.deck.length){ S.screen="results"; const k="best-"+S.mode; const prev=+(store(k)||0); S.newBest=S.score>prev; if(S.newBest) store(k,String(S.score)); }
+  render(); window.scrollTo({top:0});
+}
+
+function renderResults(){
+  const n=S.deck.length, pct=Math.round(S.correct/n*100);
+  const msg=pct===100?"Perfect sort. You're ready for these on the exam.":pct>=80?"Strong work. Review the misses below, then try another round.":pct>=60?"Getting there. Read the explanations below and play again.":"Open the key terms on the start screen, then give it another try.";
+  const misses=S.misses.map(m=>{const c=CARDS[m.idx];return `<div class="miss"><p>${esc(c.t)}</p><span class="ans">Answer: <b>${esc(labelOf(c.set,c.a))}</b> · You chose: <s>${esc(labelOf(c.set,m.picked))}</s></span><p class="why">${esc(c.why)}</p></div>`}).join("");
+  app.innerHTML=`
+  <div class="intro"><span class="eyebrow">${MODES[S.mode].title} · Results</span><h1>${S.correct} of ${n} sorted correctly</h1></div>
+  <div class="score-card">
+    <div class="stat"><span class="eyebrow">Points${S.newBest?" · New personal best":""}</span><span class="big">${S.score}</span></div>
+    <div class="stat"><span class="eyebrow">Accuracy</span><span class="num" style="font-family:var(--display);font-stretch:112%;font-weight:800;font-size:28px">${pct}%</span></div>
+    <div class="stat"><span class="eyebrow">Best streak</span><span class="num" style="font-family:var(--display);font-stretch:112%;font-weight:800;font-size:28px">${S.bestStreak}</span></div>
+  </div>
+  <p class="msg">${msg}</p>
+  <div class="actions"><button class="primary" id="again">Play this round again</button><button class="ghost" id="home">Choose another round</button></div>
+  ${S.misses.length?`<div class="review"><h2>Review your misses</h2>${misses}</div>`:""}`;
+  document.getElementById("again").onclick=()=>startGame(S.mode);
+  document.getElementById("home").onclick=()=>{S=null;render()};
+}
+
+document.addEventListener("keydown",e=>{
+  if(!S||S.screen!=="play") return;
+  if(S.picked===null&&["1","2","3"].includes(e.key)){const b=document.getElementById("bin-"+(+e.key-1)); if(b) answer(b.dataset.id);}
+});
+
+render();
+</script>
+</body>
+</html>
