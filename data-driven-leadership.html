@@ -7,6 +7,65 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+  /* Four principle cards: 2x2 within the 900px .wrap, 1 column on phones */
+  .catalog-grid.four-up { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 34px; margin-top: 30px; }
+  @media (max-width: 640px) { .catalog-grid.four-up { grid-template-columns: 1fr; } }
+
+  .card-list { margin: 0 0 0.9em; padding-left: 1.1em; color: var(--text-muted); font-size: 0.92rem; }
+  .card-list li { margin-bottom: 4px; }
+  .card-list li::marker { color: var(--tcu-purple); }
+  .card-list strong { color: var(--text-dark); font-weight: 600; }
+
+  /* ---------- Report card ---------- */
+  .report-card {
+    margin-top: 24px;
+    background: var(--white);
+    border: 1px solid var(--border-gray);
+    border-top: 3px solid var(--tcu-purple);
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+  }
+  .report-head {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    padding: 12px 20px;
+    background: var(--tcu-purple-light);
+    border-bottom: 1px solid var(--border-gray);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--tcu-purple);
+  }
+  .report-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px dashed var(--border-gray);
+  }
+  .report-row h3 { margin: 0 0 2px; font-size: 1.05rem; }
+  .report-row p { margin: 0; font-size: 0.9rem; }
+  .report-row select {
+    font-family: 'Source Serif 4', serif; font-size: 1.4rem; font-weight: 700;
+    width: 68px; padding: 4px 8px;
+    color: var(--tcu-purple);
+    background: var(--white);
+    border: 1px solid var(--tcu-purple);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .report-row select:focus-visible { outline: 2px solid var(--tcu-purple); outline-offset: 2px; }
+  .report-foot {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    padding: 16px 20px;
+    background: var(--page-gray);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: var(--text-dark);
+  }
+  .report-foot .gpa { font-family: 'Source Serif 4', serif; font-size: 1.8rem; font-weight: 700; color: var(--tcu-purple); margin-left: 6px; }
+  .report-foot .note {
+    display: inline-block; transform: rotate(-2deg);
+    border: 1px solid var(--tcu-purple); border-radius: 3px; padding: 4px 10px;
+    color: var(--tcu-purple-dark);
+  }
+  .grade-key { margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; }
+</style>
 </head>
 <body>
 
@@ -29,28 +88,105 @@
     <h1>Leading with data</h1>
     <p class="lede">The leaders who will shape the next decade of business are the ones who can turn data into judgment, not just dashboards. Incorporating data into every layer of decision-making &mdash; from daily operations to long-term strategy &mdash; replaces guesswork with clarity, surfaces risk earlier, and builds trust with the people affected by the decision.</p>
 
-    <div class="catalog-grid">
+    <div class="catalog-grid four-up">
       <a class="catalog-card" href="#">
-        <span class="tab">Principle</span>
-        <h3>Decisions over instinct</h3>
-        <p>Intuition still matters, but it should be informed, not unchecked. Grounding a decision in data means being able to explain why a choice was made, not just that it was made.</p>
-        <span class="stamp">clarity</span>
+        <span class="tab">Principle 01</span>
+        <h3>Clarity</h3>
+        <p>Before any analysis begins, test the foundation:</p>
+        <ul class="card-list">
+          <li>Is the problem well defined?</li>
+          <li>Are you collecting the right data?</li>
+          <li>Are you using messy data?</li>
+        </ul>
+        <span class="stamp">questions first</span>
       </a>
 
       <a class="catalog-card" href="#">
-        <span class="tab">Principle</span>
-        <h3>Building a data culture</h3>
+        <span class="tab">Principle 02</span>
+        <h3>Culture</h3>
         <p>A data-driven organization isn't defined by its tools &mdash; it's defined by whether people at every level feel empowered to ask questions of the data and challenge assumptions with evidence.</p>
-        <span class="stamp">culture</span>
+        <span class="stamp">building a data culture</span>
       </a>
 
       <a class="catalog-card" href="#">
-        <span class="tab">Principle</span>
-        <h3>AI as a decision partner</h3>
-        <p>Artificial intelligence doesn't replace judgment &mdash; it extends it, helping leaders process more information, spot patterns faster, and stress-test decisions before they're made.</p>
-        <span class="stamp">strategy</span>
+        <span class="tab">Principle 03</span>
+        <h3>Strategy</h3>
+        <p>Strong leaders know which tool fits the decision in front of them:</p>
+        <ul class="card-list">
+          <li><strong>Data</strong> when the question is measurable and the history is reliable.</li>
+          <li><strong>AI</strong> to process volume, spot patterns, and stress-test options.</li>
+          <li><strong>Expertise</strong> when the situation is new, the data is thin, or context and values decide the outcome.</li>
+        </ul>
+        <span class="stamp">data &middot; AI &middot; expertise</span>
+      </a>
+
+      <a class="catalog-card" href="#">
+        <span class="tab">Principle 04</span>
+        <h3>Dealing with bias</h3>
+        <p>Data reflects the choices of the people who collected it. Ask whose experiences are missing, what assumptions shaped the metrics, and whether the results simply confirm what you already believed. Invite people who see things differently to review the evidence.</p>
+        <span class="stamp">integrity</span>
       </a>
     </div>
+  </section>
+
+  <section class="page-section" id="assess">
+    <span class="eyebrow">Assessing your current state</span>
+    <h2>Report card time</h2>
+    <p>Remember report cards? It's time to pull one out again &mdash; this time for you and your team. Before diving into the principles above, take an honest look at where you stand today. Skipping this step means building on assumptions, which is exactly what data-driven leadership is meant to replace. A clear starting point shows you which principle to work on first and gives you a baseline to measure progress against.</p>
+    <p>Give yourself a letter grade in each subject. No grade inflation.</p>
+
+    <div class="report-card" aria-label="Data-driven leadership report card">
+      <div class="report-head">
+        <span>Report Card</span>
+        <span>Term: Current State</span>
+      </div>
+
+      <div class="report-row">
+        <div>
+          <h3>Clarity</h3>
+          <p>An A means problems are defined before data is pulled, and the team trusts its data sources.</p>
+        </div>
+        <select aria-label="Grade for Clarity" data-subject="Clarity">
+          <option>A</option><option>B</option><option selected>C</option><option>D</option><option>F</option>
+        </select>
+      </div>
+
+      <div class="report-row">
+        <div>
+          <h3>Culture</h3>
+          <p>An A means anyone on the team can question the numbers, and evidence wins arguments.</p>
+        </div>
+        <select aria-label="Grade for Culture" data-subject="Culture">
+          <option>A</option><option>B</option><option selected>C</option><option>D</option><option>F</option>
+        </select>
+      </div>
+
+      <div class="report-row">
+        <div>
+          <h3>Strategy</h3>
+          <p>An A means you deliberately choose between data, AI, and expertise for each decision.</p>
+        </div>
+        <select aria-label="Grade for Strategy" data-subject="Strategy">
+          <option>A</option><option>B</option><option selected>C</option><option>D</option><option>F</option>
+        </select>
+      </div>
+
+      <div class="report-row">
+        <div>
+          <h3>Dealing with bias</h3>
+          <p>An A means you actively look for missing voices and flawed assumptions in your data.</p>
+        </div>
+        <select aria-label="Grade for Dealing with bias" data-subject="Dealing with bias">
+          <option>A</option><option>B</option><option selected>C</option><option>D</option><option>F</option>
+        </select>
+      </div>
+
+      <div class="report-foot">
+        <div>GPA: <span class="gpa" id="gpa">2.00</span></div>
+        <div class="note" id="comment">Teacher's note: Start with the subject that has the lowest grade.</div>
+      </div>
+    </div>
+    <p class="grade-key">A = 4.0 &middot; B = 3.0 &middot; C = 2.0 &middot; D = 1.0 &middot; F = 0.0</p>
   </section>
 
   <section class="page-section">
@@ -65,6 +201,35 @@
     <p>&copy; 2026 Renee M. Olvera</p>
   </div>
 </footer>
+
+<script>
+  (function () {
+    var points = { A: 4, B: 3, C: 2, D: 1, F: 0 };
+    var selects = document.querySelectorAll('.report-card select');
+    var gpaEl = document.getElementById('gpa');
+    var commentEl = document.getElementById('comment');
+
+    function update() {
+      var total = 0, lowest = null;
+      selects.forEach(function (s) {
+        var p = points[s.value];
+        total += p;
+        if (!lowest || p < points[lowest.value]) lowest = s;
+      });
+      var gpa = total / selects.length;
+      gpaEl.textContent = gpa.toFixed(2);
+
+      if (gpa === 4) {
+        commentEl.textContent = "Teacher's note: Honor roll! Keep the bar high and reassess each term.";
+      } else {
+        commentEl.textContent = "Teacher's note: Start with " + lowest.dataset.subject + ".";
+      }
+    }
+
+    selects.forEach(function (s) { s.addEventListener('change', update); });
+    update();
+  })();
+</script>
 
 </body>
 </html>
