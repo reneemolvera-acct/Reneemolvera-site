@@ -36,7 +36,8 @@
   .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
   .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
   .how div{background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
-  .how b{display:block;margin-bottom:4px}
+  .how div > b:first-child{display:block;margin-bottom:4px}
+  [hidden]{display:none !important}
 
   /* ---------- Game layout ---------- */
   .game{display:grid;grid-template-columns:minmax(0,1fr) 430px;height:calc(100vh - 56px)}
@@ -157,8 +158,6 @@
       <div><b>3 · Check</b>Correct items turn green, wrong ones turn red. Fix them and check again, then see the SQL.</div>
     </div>
     <p style="font-size:14px;color:var(--muted)">Tip: hover over a variable in the ERD to light up the relationship lines that connect it to other tables.</p>
-    <label for="nm">Your name (optional)</label>
-    <input type="text" id="nm" placeholder="First and last name" autocomplete="name">
     <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn" id="go">Start the challenge</button>
     </div>
@@ -650,8 +649,7 @@ function results(){
 
 /* ---------------- Boot ---------------- */
 buildERD(); setScale(1);
-$('#go').onclick = () => { S.name = $('#nm').value.trim(); startRound(QUESTIONS.map((_, i) => i)); };
-$('#nm').addEventListener('keydown', e => { if (e.key === 'Enter') $('#go').click(); });
+$('#go').onclick = () => { startRound(QUESTIONS.map((_, i) => i)); };
 window.addEventListener('resize', () => { if ($('#play').classList.contains('on')) fit(); });
 </script>
 </body>
