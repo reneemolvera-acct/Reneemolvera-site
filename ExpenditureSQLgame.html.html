@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expenditure Cycle ERD Challenge</title>
+<style>
+  :root{
+    --ink:#1d2330; --muted:#5d6678; --line:#d9dee7; --bg:#f4f6fa; --card:#ffffff;
+    --accent:#0b3a6e; --good:#1f8a4c; --good-bg:#e7f6ec; --bad:#c62f2f; --bad-bg:#fdecec;
+    --warn:#a86400;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);}
+  button{font:inherit;cursor:pointer}
+  header.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 18px;background:var(--accent);color:#fff;min-height:56px}
+  header.top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  header.top .sub{font-size:13px;opacity:.85}
+  header.top .stats{margin-left:auto;display:flex;gap:14px;font-size:14px;align-items:center}
+  header.top .pill{background:rgba(255,255,255,.15);padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+  .screen{display:none}
+  .screen.on{display:block}
+
+  /* ---------- Start / results ---------- */
+  .panel{max-width:760px;margin:32px auto;padding:28px 30px;background:var(--card);border-radius:14px;box-shadow:0 2px 14px rgba(20,30,60,.08)}
+  .panel h2{margin:0 0 6px;font-size:24px}
+  .panel p,.panel li{line-height:1.55}
+  .panel label{font-weight:600;display:block;margin:18px 0 6px}
+  .panel input[type=text]{width:100%;max-width:360px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  .btn{border:none;border-radius:8px;padding:10px 18px;font-weight:600;background:var(--accent);color:#fff}
+  .btn:hover{filter:brightness(1.1)}
+  .btn.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.soft{background:#eef1f6;color:var(--ink)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+  .how div{background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+  .how b{display:block;margin-bottom:4px}
+
+  /* ---------- Game layout ---------- */
+  .game{display:grid;grid-template-columns:minmax(0,1fr) 430px;height:calc(100vh - 56px)}
+  .erd-pane{position:relative;overflow:hidden;display:flex;flex-direction:column;border-right:1px solid var(--line)}
+  .erd-tools{display:flex;gap:6px;align-items:center;padding:8px 12px;background:#fff;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .erd-tools button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 10px;min-width:32px}
+  .erd-tools .legend{margin-left:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .erd-scroll{flex:1;overflow:auto;background-color:#f7f8fb;background-image:radial-gradient(#dfe3ea 1px,transparent 1px);background-size:18px 18px}
+  .erd-sizer{position:relative}
+  .erd-canvas{position:absolute;left:0;top:0;transform-origin:0 0}
+  .erd-canvas svg{position:absolute;left:0;top:0;overflow:visible}
+  .edge{fill:none;stroke-width:2.2;opacity:.85;transition:opacity .15s,stroke-width .15s}
+  .erd-canvas.dim .edge{opacity:.15}
+  .erd-canvas.dim .edge.hot{opacity:1;stroke-width:3.2}
+
+  .tbl{position:absolute;width:270px;border:1.5px solid var(--c);border-radius:9px;background:#fff;overflow:hidden;box-shadow:0 2px 6px rgba(20,30,60,.08)}
+  .tbl .th{height:36px;line-height:36px;padding:0 12px;background:var(--c);color:#fff;font-weight:700;font-size:15px;cursor:grab;user-select:none;display:flex;justify-content:space-between;align-items:center}
+  .tbl .th .tag{font-size:10.5px;font-weight:600;background:rgba(255,255,255,.22);padding:1px 7px;border-radius:999px;line-height:16px}
+  .row{height:26px;display:flex;align-items:center;gap:6px;padding:0 10px 0 12px;font-size:13px;color:var(--c);border-top:1px solid color-mix(in srgb,var(--c) 35%,white);background:color-mix(in srgb,var(--c) 4%,white);cursor:grab;user-select:none}
+  .row:hover,.th:hover{filter:brightness(.96)}
+  .row .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row.pk .nm{font-weight:700}
+  .row .k{font-size:10.5px;font-weight:700;letter-spacing:.3px}
+  .row .ty{font-size:12px;opacity:.85}
+  .row .nn{font-size:9.5px;font-weight:700;background:var(--c);color:#fff;border-radius:3px;padding:0 3px;line-height:15px;width:20px;text-align:center}
+  .row .nn.off{background:transparent}
+  .row.hot,.th.hot{background:color-mix(in srgb,var(--c) 22%,white)}
+  .row.sel,.th.sel{outline:3px solid #f2b705;outline-offset:-3px}
+  .row:focus-visible,.th:focus-visible{outline:3px solid #f2b705;outline-offset:-3px}
+
+  .q-pane{overflow:auto;background:#fff;padding:16px 18px 30px}
+  .qhead{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .dots{display:flex;gap:4px;flex-wrap:wrap}
+  .dots span{width:10px;height:10px;border-radius:50%;background:#dfe3ea}
+  .dots span.cur{outline:2px solid var(--accent);outline-offset:1px}
+  .dots span.correct{background:var(--good)}
+  .dots span.retry{background:#7fbf95}
+  .dots span.revealed,.dots span.missed{background:var(--bad)}
+  .qtitle{font-size:19px;font-weight:700;margin:6px 0 6px}
+  .scenario{font-size:15px;line-height:1.55;margin:0 0 12px;background:#f6f8fb;border-left:4px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0}
+  .tray{font-size:13px;color:var(--muted);margin:0 0 12px;min-height:22px}
+  .tray .chip{cursor:default}
+  .part{margin:0 0 14px}
+  .prompt{font-weight:600;font-size:14.5px;margin-bottom:6px;line-height:1.4}
+  .need{display:inline-block;font-size:11.5px;font-weight:700;color:var(--accent);background:#e8eef7;border-radius:999px;padding:1px 9px;margin-left:4px;vertical-align:1px;white-space:nowrap}
+  .zone{display:flex;flex-wrap:wrap;gap:6px;min-height:46px;padding:7px;border:2px dashed #b9c2d2;border-radius:10px;background:#fafbfd;transition:background .12s,border-color .12s}
+  .zone.armed{border-color:#f2b705;background:#fffbea;cursor:pointer}
+  .zone.over{border-color:var(--accent);background:#eaf1fb}
+  .zone.ok{border-style:solid;border-color:var(--good);background:var(--good-bg)}
+  .zone.no{border-style:solid;border-color:var(--bad);background:var(--bad-bg)}
+  .zone.shake{animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+  .slot{min-width:110px;height:30px;border:1.5px dashed #c9d0dc;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9aa3b2;background:#fff}
+  .chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px 0 10px;border-radius:7px;font-size:13px;font-weight:600;border:1.5px solid var(--c);color:var(--c);background:#fff;white-space:nowrap}
+  .chip.table{background:var(--c);color:#fff}
+  .chip .x{border:none;background:transparent;color:inherit;font-size:16px;line-height:1;padding:0 4px;opacity:.7}
+  .chip .x:hover{opacity:1}
+  .chip.right{box-shadow:0 0 0 2px var(--good)}
+  .chip.wrong{box-shadow:0 0 0 2px var(--bad);text-decoration:line-through}
+  .chip .mark{font-weight:800}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 8px}
+  .actions .spacer{flex:1}
+  .fb{border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.5;display:none}
+  .fb.on{display:block}
+  .fb.good{background:var(--good-bg);border:1px solid #b6e0c4}
+  .fb.bad{background:var(--bad-bg);border:1px solid #f1c0c0}
+  .fb.info{background:#fff7e6;border:1px solid #f0d9a6}
+  .fb h4{margin:0 0 4px;font-size:15px}
+  pre.sql{background:#13203a;color:#e6edf8;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;overflow:auto;margin:8px 0 0;white-space:pre}
+  pre.sql .kw{color:#7fc4ff;font-weight:700}
+
+  .drag-ghost{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-60%) rotate(-2deg);box-shadow:0 6px 18px rgba(0,0,0,.25)}
+
+  /* results */
+  .scorebig{font-size:44px;font-weight:800;color:var(--accent);margin:6px 0}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 20px}
+  .bar div{flex:1;min-width:150px;background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .bar b{font-size:22px;display:block}
+  .review{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+  .review .tagline{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .review table{border-collapse:collapse;font-size:14px;margin-top:6px;width:100%}
+  .review td{padding:4px 6px;border-top:1px solid #eef0f4;vertical-align:top}
+  .review td:first-child{width:55%}
+
+  @media (max-width: 980px){
+    .game{grid-template-columns:1fr;height:auto}
+    .erd-pane{height:58vh;border-right:none;border-bottom:1px solid var(--line)}
+    .q-pane{overflow:visible}
+  }
+  @media print{
+    header.top{background:#fff;color:#000;border-bottom:2px solid #000}
+    .btn,.actions{display:none !important}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>Expenditure Cycle ERD Challenge</h1>
+    <div class="sub">ACCT 40223 · Accounting Information Systems · Reading an ERD to plan a query</div>
+  </div>
+  <div class="stats" id="stats" hidden>
+    <span class="pill" id="who"></span>
+    <span class="pill" id="prog"></span>
+    <span class="pill" id="score"></span>
+  </div>
+</header>
+
+<!-- ===================== START ===================== -->
+<section class="screen on" id="start">
+  <div class="panel">
+    <h2>Plan the query from the ERD</h2>
+    <p>Management needs information from the company's <b>expenditure cycle</b> database — the purchase orders, vendors, receiving reports and vendor invoices behind every purchase. For each question, study the ERD and decide <b>which tables and which variables (columns)</b> you would use to write the SQL query.</p>
+    <div class="how">
+      <div><b>1 · Read the question</b>Each answer box tells you how many items it needs, e.g. <span class="need">Drop 2 variables</span></div>
+      <div><b>2 · Drag from the ERD</b>Drag a <b>table name</b> (colored header) or a <b>variable</b> (row) into the box. On a tablet, tap the item, then tap the box.</div>
+      <div><b>3 · Check</b>Correct items turn green, wrong ones turn red. Fix them and check again, then see the SQL.</div>
+    </div>
+    <p style="font-size:14px;color:var(--muted)">Tip: hover over a variable in the ERD to light up the relationship lines that connect it to other tables.</p>
+    <label for="nm">Your name (optional)</label>
+    <input type="text" id="nm" placeholder="First and last name" autocomplete="name">
+    <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="go">Start the challenge</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GAME ===================== -->
+<section class="screen" id="play">
+  <div class="game">
+    <div class="erd-pane">
+      <div class="erd-tools">
+        <b style="color:var(--ink)">ERD</b>
+        <button id="zout" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="zfit" title="Fit to width">Fit</button>
+        <button id="zin" title="Zoom in" aria-label="Zoom in">+</button>
+        <span class="legend"><span><b>PK</b> primary key</span><span><b>FK</b> foreign key</span><span><b>NN</b> not null</span><span>—|  one &nbsp; —&lt; many</span></span>
+      </div>
+      <div class="erd-scroll" id="erdScroll">
+        <div class="erd-sizer" id="erdSizer"><div class="erd-canvas" id="erd"></div></div>
+      </div>
+    </div>
+    <div class="q-pane" id="qpane"></div>
+  </div>
+</section>
+
+<!-- ===================== RESULTS ===================== -->
+<section class="screen" id="results">
+  <div class="panel" id="resPanel"></div>
+</section>
+
+<script>
+/* =====================================================================
+   EDIT HERE — the database (ERD) and the questions.
+   Column format: [name, data type, keys ("PK", "FK", "PK FK" or ""), not-null (1/0)]
+   ===================================================================== */
+const TABLES = {
+  vendors: { x:60, y:60, color:'#7b3fa0', cols:[
+    ['vendor_id','bigint','PK',1], ['vendor_name','varchar','',1], ['contact_name','varchar','',0],
+    ['email','varchar','',0], ['phone','varchar','',0], ['street_address','varchar','',0],
+    ['city','varchar','',0], ['state','char','',0], ['zipcode','varchar','',0],
+    ['payment_terms','varchar','',1], ['preferred_vendor','boolean','',0] ]},
+  inventory: { x:60, y:446, color:'#d9452a', cols:[
+    ['inventory_id','bigint','PK',1], ['inventory_name','varchar','',1], ['standard_cost','decimal','',1],
+    ['quantity_on_hand','int','',1], ['reorder_point','int','',0], ['inventory_group','varchar','',0] ]},
+  purchase_order: { x:480, y:60, color:'#0b3a6e', cols:[
+    ['po_id','bigint','PK',1], ['po_date','datetime','',1], ['vendor_id','bigint','FK',1],
+    ['buyer_emp_id','bigint','FK',1], ['approved','boolean','',0], ['approved_at','datetime','',0],
+    ['approver_emp_id','bigint','FK',0], ['expected_delivery_date','datetime','',0], ['transaction_id','bigint','',1] ]},
+  purchase_order_detail: { x:480, y:420, color:'#3e5a12', cols:[
+    ['po_id','bigint','PK FK',1], ['inventory_id','bigint','PK FK',1],
+    ['quantity_ordered','int','',1], ['unit_cost','decimal','',1] ]},
+  employee: { x:480, y:610, color:'#8e1b2e', cols:[
+    ['emp_id','bigint','PK',1], ['first_name','varchar','',1], ['last_name','varchar','',1],
+    ['job_title','varchar','',1], ['department','varchar','',1] ]},
+  receipts: { x:900, y:60, color:'#0f7c78', cols:[
+    ['receipt_id','bigint','PK',1], ['po_id','bigint','FK',1], ['packing_slip_number','varchar','',0],
+    ['received_at','datetime','',1], ['quantity_received','int','',1], ['receiver_emp_id','bigint','FK',1],
+    ['damaged','boolean','',0], ['transaction_id','bigint','',1] ]},
+  invoices: { x:900, y:380, color:'#d97400', cols:[
+    ['invoice_id','bigint','PK',1], ['invoice_number','varchar','',1], ['vendor_id','bigint','FK',1],
+    ['po_id','bigint','FK',1], ['receipt_id','bigint','FK',0], ['invoice_date','datetime','',1],
+    ['due_date','datetime','',1], ['invoice_amount','decimal','',1], ['three_way_match','boolean','',0],
+    ['approved_emp_id','bigint','FK',0], ['paid','boolean','',0], ['paid_at','datetime','',0], ['check_number','varchar','',0] ]},
+};
+
+/* Relationship lines: FK (many side) -> PK (one side).
+   fs/ts = side of the table the line leaves/arrives (L or R); lane = x of the vertical segment.
+   via = [x1, busY, x2] for lines routed over the top of the diagram. */
+const EDGES = [
+  {from:['purchase_order','vendor_id'], to:['vendors','vendor_id'], fs:'L', ts:'R', lane:390},
+  {from:['purchase_order_detail','po_id'], to:['purchase_order','po_id'], fs:'L', ts:'L', lane:450},
+  {from:['purchase_order_detail','inventory_id'], to:['inventory','inventory_id'], fs:'L', ts:'R', lane:410},
+  {from:['purchase_order','buyer_emp_id'], to:['employee','emp_id'], fs:'R', ts:'R', lane:790},
+  {from:['purchase_order','approver_emp_id'], to:['employee','emp_id'], fs:'R', ts:'R', lane:790},
+  {from:['receipts','receiver_emp_id'], to:['employee','emp_id'], fs:'L', ts:'R', lane:790},
+  {from:['invoices','approved_emp_id'], to:['employee','emp_id'], fs:'L', ts:'R', lane:790},
+  {from:['receipts','po_id'], to:['purchase_order','po_id'], fs:'L', ts:'R', lane:850},
+  {from:['invoices','po_id'], to:['purchase_order','po_id'], fs:'L', ts:'R', lane:850},
+  {from:['invoices','receipt_id'], to:['receipts','receipt_id'], fs:'R', ts:'R', lane:1205},
+  {from:['invoices','vendor_id'], to:['vendors','vendor_id'], fs:'R', ts:'L', via:[1232,28,30]},
+];
+const CANVAS_W = 1260, CANVAS_H = 800;
+
+/* Questions. kind: 'table' or 'variable'. answer: list of names (order does not matter). */
+const QUESTIONS = [
+  { topic:'Single table', title:'Who do we buy from?',
+    scenario:'Management needs a list of every vendor the company does business with.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['vendors']} ],
+    why:'All vendor master data lives in the <b>vendors</b> table — one row per vendor.',
+    sql:`SELECT *\nFROM vendors;` },
+
+  { topic:'WHERE', title:'Purchasing department staff',
+    scenario:'HR wants the first and last names of every employee who works in the Purchasing department.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['employee']},
+            {prompt:'Which variables go in the SELECT list?', kind:'variable', answer:['first_name','last_name']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['department']} ],
+    why:'Names and department are all stored in <b>employee</b>; filter rows on <b>department</b>.',
+    sql:`SELECT first_name, last_name\nFROM employee\nWHERE department = 'Purchasing';` },
+
+  { topic:'WHERE', title:'Texas vendors',
+    scenario:'List the vendor name and phone number of all vendors located in Texas.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['vendors']},
+            {prompt:'Which variables go in the SELECT list?', kind:'variable', answer:['vendor_name','phone']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['state']} ],
+    why:'Every field you need is in <b>vendors</b>. Texas is a value of <b>state</b>, so it belongs in WHERE.',
+    sql:`SELECT vendor_name, phone\nFROM vendors\nWHERE state = 'TX';` },
+
+  { topic:'ORDER BY', title:'Most expensive items',
+    scenario:'List every inventory item name and its standard cost, sorted from most expensive to least expensive.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['inventory']},
+            {prompt:'Which variables go in the SELECT list?', kind:'variable', answer:['inventory_name','standard_cost']},
+            {prompt:'Which variable goes in the ORDER BY clause?', kind:'variable', answer:['standard_cost']} ],
+    why:'Item cost is a property of the item, so it is in <b>inventory</b>. Sort on <b>standard_cost</b> in DESC order.',
+    sql:`SELECT inventory_name, standard_cost\nFROM inventory\nORDER BY standard_cost DESC;` },
+
+  { topic:'SUM', title:'Total vendor billings',
+    scenario:'What is the total dollar amount of all vendor invoices the company has received?',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['invoices']},
+            {prompt:'Which variable do you SUM?', kind:'variable', answer:['invoice_amount']} ],
+    why:'Vendor bills are recorded in <b>invoices</b>; the dollar value is <b>invoice_amount</b>.',
+    sql:`SELECT SUM(invoice_amount) AS total_invoiced\nFROM invoices;` },
+
+  { topic:'GROUP BY', title:'Units ordered by item',
+    scenario:'Purchasing wants the total quantity ordered for each inventory item, listed so the item ordered most is first and the item ordered least is last.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['purchase_order_detail']},
+            {prompt:'Which variable do you SUM?', kind:'variable', answer:['quantity_ordered']},
+            {prompt:'Which variable should you use in the GROUP BY statement?', kind:'variable', answer:['inventory_id']} ],
+    why:'Line-item quantities live in <b>purchase_order_detail</b> (one row per item per PO). Add up <b>quantity_ordered</b> for each <b>inventory_id</b>.',
+    sql:`SELECT inventory_id, SUM(quantity_ordered) AS total_units\nFROM purchase_order_detail\nGROUP BY inventory_id\nORDER BY total_units DESC;` },
+
+  { topic:'WHERE + ORDER BY', title:'Unpaid invoices (accounts payable)',
+    scenario:'The controller needs an accounts payable listing: the invoice number, vendor ID, invoice amount and due date of every invoice that has <u>not</u> been paid, sorted by the date it is due.',
+    parts:[ {prompt:'Which table should you query?', kind:'table', answer:['invoices']},
+            {prompt:'Which variables go in the SELECT list?', kind:'variable', answer:['invoice_number','vendor_id','invoice_amount','due_date']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['paid']},
+            {prompt:'Which variable goes in the ORDER BY clause?', kind:'variable', answer:['due_date']} ],
+    why:'Accounts payable = invoices received but not yet paid. The boolean <b>paid</b> filters them; <b>due_date</b> sorts them.',
+    sql:`SELECT invoice_number, vendor_id, invoice_amount, due_date\nFROM invoices\nWHERE paid = FALSE\nORDER BY due_date;` },
+
+  { topic:'JOIN (2 tables)', title:'2025 purchase orders',
+    scenario:'Management wants the PO ID, PO date and vendor name for every purchase order placed in 2025, sorted from oldest to newest.',
+    parts:[ {prompt:'Which tables do you need to query?', kind:'table', answer:['purchase_order','vendors']},
+            {prompt:'What variable connects these two tables?', kind:'variable', answer:['vendor_id']},
+            {prompt:'Which variable goes in the WHERE clause?', kind:'variable', answer:['po_date']},
+            {prompt:'Which variable sorts the results?', kind:'variable', answer:['po_date']} ],
+    why:'<b>purchase_order</b> holds the date; <b>vendors</b> holds the name. The FK <b>vendor_id</b> in purchase_order points to the PK in vendors.',
+    sql:`SELECT po.po_id, po.po_date, v.vendor_name\nFROM purchase_order AS po\nJOIN vendors AS v ON po.vendor_id = v.vendor_id\nWHERE po.po_date BETWEEN '2025-01-01' AND '2025-12-31'\nORDER BY po.po_date;` },
+
+  { topic:'JOIN (2 tables)', title:'Who received the damaged goods?',
+    scenario:'The warehouse manager wants a list of every receiving report where goods arrived damaged, along with the first and last name of the employee who received them.',
+    parts:[ {prompt:'Which tables do you need to query?', kind:'table', answer:['receipts','employee']},
+            {prompt:'Which two variables link the tables? (one from each table)', kind:'variable', answer:['receiver_emp_id','emp_id']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['damaged']} ],
+    why:'The FK has a different name than the PK it points to: <b>receipts.receiver_emp_id</b> = <b>employee.emp_id</b>. Follow the line on the ERD!',
+    sql:`SELECT r.receipt_id, r.received_at, e.first_name, e.last_name\nFROM receipts AS r\nJOIN employee AS e ON r.receiver_emp_id = e.emp_id\nWHERE r.damaged = TRUE;` },
+
+  { topic:'JOIN (3 tables) + SUM', title:'Total purchases by vendor',
+    scenario:'Management wants total purchases by vendor name, counting only purchase orders that were approved. Assume the purchase amount is a calculated line item: quantity ordered × unit cost.',
+    parts:[ {prompt:'Which tables do you need to query?', kind:'table', answer:['vendors','purchase_order','purchase_order_detail']},
+            {prompt:'On what variables would you connect the tables?', kind:'variable', answer:['vendor_id','po_id']},
+            {prompt:'Which two variables are multiplied inside the SUM?', kind:'variable', answer:['quantity_ordered','unit_cost']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['approved']},
+            {prompt:'Which variable would you GROUP BY?', kind:'variable', answer:['vendor_name']} ],
+    why:'<b>vendors</b> (name) → <b>purchase_order</b> (approval) via vendor_id → <b>purchase_order_detail</b> (quantity × cost) via po_id.',
+    sql:`SELECT v.vendor_name,\n       SUM(d.quantity_ordered * d.unit_cost) AS total_purchases\nFROM vendors AS v\nJOIN purchase_order AS po ON v.vendor_id = po.vendor_id\nJOIN purchase_order_detail AS d ON po.po_id = d.po_id\nWHERE po.approved = TRUE\nGROUP BY v.vendor_name;` },
+
+  { topic:'JOIN (3 tables)', title:'Three-way match exceptions',
+    scenario:'Before paying a vendor, AP compares the purchase order, the receiving report and the vendor invoice (the three-way match). List each invoice that <u>failed</u> the three-way match, with its PO date and the date the goods were received.',
+    parts:[ {prompt:'Which tables do you need to query?', kind:'table', answer:['invoices','purchase_order','receipts']},
+            {prompt:'On what variables would you connect the tables?', kind:'variable', answer:['po_id','receipt_id']},
+            {prompt:'Which variable is used in the WHERE clause?', kind:'variable', answer:['three_way_match']} ],
+    why:'invoices links to purchase_order through <b>po_id</b> and to receipts through <b>receipt_id</b>. The boolean <b>three_way_match</b> flags the exceptions.',
+    sql:`SELECT i.invoice_number, po.po_date, r.received_at\nFROM invoices AS i\nJOIN purchase_order AS po ON i.po_id = po.po_id\nJOIN receipts AS r ON i.receipt_id = r.receipt_id\nWHERE i.three_way_match = FALSE;` },
+];
+
+const ALLOW_SHOW_ANSWER = true;   // set to false to hide the "Show answer" button
+/* ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const HH = 36, RH = 26, TW = 270;
+const norm = s => String(s).trim().toLowerCase();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- ERD rendering ---------------- */
+function rowY(t, col){ const T = TABLES[t]; const i = T.cols.findIndex(c => c[0] === col); return T.y + HH + i*RH + RH/2; }
+function edgeX(t, side){ const T = TABLES[t]; return side === 'R' ? T.x + TW : T.x; }
+
+function buildERD(){
+  const erd = $('#erd');
+  erd.style.width = CANVAS_W + 'px'; erd.style.height = CANVAS_H + 'px';
+  let svg = `<svg width="${CANVAS_W}" height="${CANVAS_H}" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}">`;
+  EDGES.forEach((e, i) => {
+    const [ft, fc] = e.from, [tt, tc] = e.to;
+    const fx = edgeX(ft, e.fs), fy = rowY(ft, fc), tx = edgeX(tt, e.ts), ty = rowY(tt, tc);
+    const col = TABLES[tt].color;
+    let d;
+    if (e.via) { const [x1, by, x2] = e.via; d = `M${fx} ${fy} H${x1} V${by} H${x2} V${ty} H${tx}`; }
+    else d = `M${fx} ${fy} H${e.lane} V${ty} H${tx}`;
+    const fd = e.fs === 'R' ? 1 : -1, td = e.ts === 'R' ? 1 : -1;
+    // crow's foot (many) at FK end, bar (one) at PK end
+    const crow = `M${fx+fd*13} ${fy} L${fx} ${fy-7} M${fx+fd*13} ${fy} L${fx} ${fy} M${fx+fd*13} ${fy} L${fx} ${fy+7}`;
+    const bar = `M${tx+td*9} ${ty-7} V${ty+7}`;
+    svg += `<g class="edge" data-e="${i}" stroke="${col}"><path d="${d}"/><path d="${crow}"/><path d="${bar}"/></g>`;
+  });
+  svg += `</svg>`;
+  let html = svg;
+  for (const [name, T] of Object.entries(TABLES)) {
+    html += `<div class="tbl" style="left:${T.x}px;top:${T.y}px;--c:${T.color}">
+      <div class="th" tabindex="0" data-kind="table" data-name="${name}" data-t="${name}" title="Drag the table name">${name}<span class="tag">table</span></div>`;
+    T.cols.forEach(([c, ty, k, nn]) => {
+      html += `<div class="row ${k.includes('PK') ? 'pk' : ''}" tabindex="0" data-kind="variable" data-name="${c}" data-t="${name}">
+        <span class="nm">${c}</span><span class="k">${k}</span><span class="ty">${ty}</span><span class="nn ${nn ? '' : 'off'}">${nn ? 'NN' : ''}</span></div>`;
+    });
+    html += `</div>`;
+  }
+  erd.innerHTML = html;
+
+  // hover highlighting of relationships
+  erd.querySelectorAll('.row').forEach(r => {
+    r.addEventListener('mouseenter', () => hot(r.dataset.t, r.dataset.name, true));
+    r.addEventListener('mouseleave', () => hot(null, null, false));
+  });
+}
+function hot(t, c, on){
+  const erd = $('#erd');
+  erd.querySelectorAll('.hot').forEach(x => x.classList.remove('hot'));
+  erd.classList.remove('dim');
+  if (!on) return;
+  let any = false;
+  EDGES.forEach((e, i) => {
+    const hit = (e.from[0] === t && e.from[1] === c) || (e.to[0] === t && e.to[1] === c);
+    if (!hit) return;
+    any = true;
+    erd.querySelector(`.edge[data-e="${i}"]`).classList.add('hot');
+    [e.from, e.to].forEach(([tt, cc]) => { const el = erd.querySelector(`.row[data-t="${tt}"][data-name="${cc}"]`); el && el.classList.add('hot'); });
+  });
+  if (any) erd.classList.add('dim');
+}
+
+/* zoom */
+let scale = 1;
+function setScale(s){
+  scale = Math.max(.4, Math.min(1.6, s));
+  $('#erd').style.transform = `scale(${scale})`;
+  $('#erdSizer').style.width = CANVAS_W*scale + 'px';
+  $('#erdSizer').style.height = CANVAS_H*scale + 'px';
+}
+function fit(){ const w = $('#erdScroll').clientWidth - 8; setScale(Math.max(w < 700 ? .7 : .4, Math.min(1.1, w / CANVAS_W))); }
+$('#zin').onclick = () => setScale(scale + .1);
+$('#zout').onclick = () => setScale(scale - .1);
+$('#zfit').onclick = fit;
+
+/* ---------------- State ---------------- */
+const S = { name:'', order:[], pos:0, res:{}, ans:{}, att:{}, locked:{}, picked:null };
+
+function startRound(list){
+  S.order = list; S.pos = 0;
+  list.forEach(q => { S.ans[q] = QUESTIONS[q].parts.map(() => []); S.att[q] = 0; S.locked[q] = false; delete S.res[q]; });
+  show('play'); renderQ(); requestAnimationFrame(fit);
+}
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); $('#stats').hidden = id === 'start'; updateStats(); }
+function updateStats(){
+  $('#who').textContent = S.name || 'Student';
+  $('#who').hidden = !S.name;
+  $('#prog').textContent = `Question ${Math.min(S.pos+1, S.order.length)} of ${S.order.length}`;
+  const first = Object.values(S.res).filter(r => r === 'correct').length;
+  $('#score').textContent = `First-try correct: ${first}`;
+}
+
+/* ---------------- Question rendering ---------------- */
+function colorOf(item){ return TABLES[item.t] ? TABLES[item.t].color : '#555'; }
+function chipHTML(item, opts = {}){
+  const cls = ['chip', item.kind === 'table' ? 'table' : '', opts.mark || ''].join(' ');
+  const mark = opts.mark === 'right' ? '<span class="mark">✓</span>' : opts.mark === 'wrong' ? '<span class="mark">✗</span>' : '';
+  const x = opts.remove != null ? `<button class="x" data-rm="${opts.remove}" aria-label="Remove ${esc(item.name)}">×</button>` : '';
+  return `<span class="${cls}" style="--c:${colorOf(item)}">${mark}${esc(item.name)}${x}</span>`;
+}
+function needLabel(p){ const n = p.answer.length; const w = p.kind === 'table' ? (n > 1 ? 'tables' : 'table') : (n > 1 ? 'variables' : 'variable'); return `Drop ${n} ${w}`; }
+
+function renderQ(feedback){
+  const qi = S.order[S.pos], Q = QUESTIONS[qi], A = S.ans[qi], locked = S.locked[qi];
+  const dots = S.order.map((q, i) => `<span class="${S.res[q] || ''} ${i === S.pos ? 'cur' : ''}" title="Question ${i+1}"></span>`).join('');
+  let h = `<div class="qhead"><span>Question ${S.pos+1} of ${S.order.length} · ${esc(Q.topic)}</span><span class="dots">${dots}</span></div>
+    <div class="qtitle">${esc(Q.title)}</div>
+    <p class="scenario">${Q.scenario}</p>
+    <div class="tray" id="tray">${S.picked ? `Selected: ${chipHTML(S.picked)} — now click an answer box to place it.` : 'Drag a table name or variable from the ERD into each box (or click it, then click a box).'}</div>`;
+  Q.parts.forEach((p, pi) => {
+    const want = new Set(p.answer.map(norm));
+    const zoneState = feedback ? (feedback[pi] ? 'ok' : 'no') : '';
+    let inner = '';
+    A[pi].forEach((it, k) => {
+      const mark = feedback ? (want.has(norm(it.name)) ? 'right' : 'wrong') : '';
+      inner += chipHTML(it, { mark, remove: locked ? null : k });
+    });
+    for (let k = A[pi].length; k < p.answer.length; k++) inner += `<span class="slot">drop here</span>`;
+    h += `<div class="part"><div class="prompt">${pi+1}. ${esc(p.prompt)} <span class="need">${needLabel(p)}</span></div>
+      <div class="zone ${zoneState} ${S.picked && !locked ? 'armed' : ''}" data-p="${pi}" tabindex="${locked ? -1 : 0}" role="button" aria-label="Answer box ${pi+1}, ${needLabel(p)}">${inner}</div></div>`;
+  });
+  const last = S.pos === S.order.length - 1;
+  const done = !!S.res[qi];
+  h += `<div class="actions">
+      ${locked ? '' : `<button class="btn" id="chk">Check answer</button><button class="btn soft" id="clr">Clear</button>`}
+      ${!locked && ALLOW_SHOW_ANSWER && S.att[qi] > 0 ? `<button class="btn soft" id="rev">Show answer</button>` : ''}
+      <span class="spacer"></span>
+      ${S.pos > 0 ? `<button class="btn ghost" id="prev">Back</button>` : ''}
+      <button class="btn ${done ? '' : 'ghost'}" id="next">${last ? 'Finish' : (done ? 'Next question' : 'Skip')}</button>
+    </div>
+    <div class="fb" id="fb"></div>`;
+  $('#qpane').innerHTML = h;
+  wireQ();
+  updateStats();
+}
+
+function setFB(kind, html){ const f = $('#fb'); f.className = `fb on ${kind}`; f.innerHTML = html; }
+function sqlHTML(s){
+  const kws = /\b(SELECT|FROM|WHERE|JOIN|ON|GROUP BY|ORDER BY|SUM|AS|AND|BETWEEN|DESC|TRUE|FALSE)\b/g;
+  return `<pre class="sql">${esc(s).replace(kws, '<span class="kw">$1</span>')}</pre>`;
+}
+function solvedFB(qi, label){
+  const Q = QUESTIONS[qi];
+  setFB(label === 'revealed' ? 'info' : 'good',
+    `<h4>${label === 'revealed' ? 'Here is the answer' : (label === 'correct' ? 'Correct on the first try!' : 'Correct!')}</h4>${Q.why}<div style="margin-top:8px;font-weight:600">The SQL query:</div>${sqlHTML(Q.sql)}`);
+}
+
+function wireQ(){
+  const qi = S.order[S.pos];
+  $('#qpane').querySelectorAll('[data-rm]').forEach(b => b.onclick = ev => {
+    ev.stopPropagation();
+    const pi = +b.closest('.zone').dataset.p;
+    S.ans[qi][pi].splice(+b.dataset.rm, 1); renderQ();
+  });
+  $('#qpane').querySelectorAll('.zone').forEach(z => {
+    const go = () => { if (S.picked) { place(+z.dataset.p, S.picked); } };
+    z.onclick = go;
+    z.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } };
+  });
+  const b = id => $('#' + id);
+  if (b('chk')) b('chk').onclick = check;
+  if (b('clr')) b('clr').onclick = () => { S.ans[qi] = QUESTIONS[qi].parts.map(() => []); renderQ(); };
+  if (b('rev')) b('rev').onclick = reveal;
+  if (b('prev')) b('prev').onclick = () => { S.pos--; S.picked = null; clearSel(); renderQ(); restoreFB(); };
+  b('next').onclick = () => {
+    if (!S.res[qi]) { S.res[qi] = 'missed'; S.locked[qi] = true; }
+    S.picked = null; clearSel();
+    if (S.pos === S.order.length - 1) return results();
+    S.pos++; renderQ(); restoreFB(); $('#qpane').scrollTop = 0;
+  };
+}
+function restoreFB(){
+  const qi = S.order[S.pos], r = S.res[qi];
+  if (!r) return;
+  if (r === 'missed') { renderQ(); setFB('info', `<h4>Skipped</h4>Answer: ${answerText(qi)}${sqlHTML(QUESTIONS[qi].sql)}`); return; }
+  const fbk = QUESTIONS[qi].parts.map(() => true);
+  renderQ(r === 'revealed' ? null : fbk); solvedFB(qi, r);
+}
+function answerText(qi){ return QUESTIONS[qi].parts.map((p, i) => `<br>${i+1}. ${p.answer.map(esc).join(', ')}`).join(''); }
+
+function place(pi, item){
+  const qi = S.order[S.pos];
+  if (S.locked[qi]) return;
+  const p = QUESTIONS[qi].parts[pi], arr = S.ans[qi][pi];
+  const zone = $(`.zone[data-p="${pi}"]`);
+  const bump = msg => { zone.classList.remove('shake'); void zone.offsetWidth; zone.classList.add('shake'); $('#tray').innerHTML = `<span style="color:var(--warn)">${msg}</span>`; };
+  if (arr.some(a => norm(a.name) === norm(item.name))) return bump(`<b>${esc(item.name)}</b> is already in that box.`);
+  if (arr.length >= p.answer.length) return bump(`That box only takes ${p.answer.length}. Remove one (×) first.`);
+  arr.push({ name:item.name, kind:item.kind, t:item.t });
+  S.picked = null; clearSel(); renderQ();
+}
+
+function check(){
+  const qi = S.order[S.pos], Q = QUESTIONS[qi], A = S.ans[qi];
+  const short = Q.parts.findIndex((p, i) => A[i].length < p.answer.length);
+  if (short >= 0) { setFB('bad', `Box ${short+1} needs <b>${Q.parts[short].answer.length}</b> item(s). Fill every box before checking.`); return; }
+  S.att[qi]++;
+  const fbk = Q.parts.map((p, i) => {
+    const want = p.answer.map(norm).sort().join('|'), got = A[i].map(a => norm(a.name)).sort().join('|');
+    return want === got;
+  });
+  const ok = fbk.every(Boolean);
+  if (ok) { S.res[qi] = S.att[qi] === 1 ? 'correct' : 'retry'; S.locked[qi] = true; }
+  renderQ(fbk);
+  if (ok) solvedFB(qi, S.res[qi]);
+  else {
+    const n = fbk.filter(Boolean).length;
+    setFB('bad', `<h4>Not quite — ${n} of ${fbk.length} boxes correct.</h4>Items marked ✗ don't belong. Remove them (×), look again at the ERD, and check again.${Q.parts.length > 1 ? '' : ''}`);
+  }
+}
+function reveal(){
+  const qi = S.order[S.pos], Q = QUESTIONS[qi];
+  S.ans[qi] = Q.parts.map(p => p.answer.map(n => ({ name:n, kind:p.kind, t:findTable(n, p.kind) })));
+  S.res[qi] = 'revealed'; S.locked[qi] = true;
+  renderQ(); solvedFB(qi, 'revealed');
+}
+function findTable(n, kind){
+  if (kind === 'table') return n;
+  for (const [t, T] of Object.entries(TABLES)) if (T.cols.some(c => c[0] === n && !c[2].includes('FK'))) return t;
+  for (const [t, T] of Object.entries(TABLES)) if (T.cols.some(c => c[0] === n)) return t;
+  return null;
+}
+
+/* ---------------- Drag & drop / click-to-place ---------------- */
+let drag = null;
+function clearSel(){ document.querySelectorAll('#erd .sel').forEach(x => x.classList.remove('sel')); }
+function pick(el){
+  if (S.locked[S.order[S.pos]]) { setFB('info', 'This question is finished — press <b>Next question</b>.'); return; }
+  clearSel(); el.classList.add('sel');
+  S.picked = { name:el.dataset.name, kind:el.dataset.kind, t:el.dataset.t };
+  renderQ();
+}
+const erdEl = $('#erd');
+erdEl.addEventListener('pointerdown', ev => {
+  const el = ev.target.closest('[data-kind]');
+  if (!el || ev.pointerType === 'touch' || ev.button !== 0) return;
+  ev.preventDefault();
+  drag = { el, x:ev.clientX, y:ev.clientY, ghost:null };
+});
+window.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  if (!drag.ghost) {
+    if (Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < 6) return;
+    if (S.locked[S.order[S.pos]]) { drag = null; setFB('info', 'This question is finished — press <b>Next question</b>.'); return; }
+    const it = { name:drag.el.dataset.name, kind:drag.el.dataset.kind, t:drag.el.dataset.t };
+    drag.item = it;
+    const g = document.createElement('div'); g.className = 'drag-ghost'; g.innerHTML = chipHTML(it);
+    document.body.appendChild(g); drag.ghost = g; document.body.style.cursor = 'grabbing';
+  }
+  drag.ghost.style.left = ev.clientX + 'px'; drag.ghost.style.top = ev.clientY + 'px';
+  const z = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.zone');
+  document.querySelectorAll('.zone.over').forEach(x => x !== z && x.classList.remove('over'));
+  z && z.classList.add('over');
+});
+window.addEventListener('pointerup', ev => {
+  if (!drag) return;
+  const d = drag; drag = null; document.body.style.cursor = '';
+  if (!d.ghost) { pick(d.el); return; }        // a click, not a drag
+  d.ghost.remove();
+  const z = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.zone');
+  document.querySelectorAll('.zone.over').forEach(x => x.classList.remove('over'));
+  if (z) place(+z.dataset.p, d.item);
+});
+// touch: tap to select (scrolling the ERD still works)
+let lastPtr = 'mouse';
+erdEl.addEventListener('pointerdown', ev => { lastPtr = ev.pointerType; }, true);
+erdEl.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-kind]');
+  if (el && (lastPtr === 'touch' || lastPtr === 'pen')) pick(el);
+});
+erdEl.addEventListener('keydown', ev => {
+  const el = ev.target.closest('[data-kind]');
+  if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); pick(el); }
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.picked) { S.picked = null; clearSel(); renderQ(); } });
+
+/* ---------------- Results ---------------- */
+function results(){
+  const all = S.order;
+  const c = all.filter(q => S.res[q] === 'correct').length;
+  const r = all.filter(q => S.res[q] === 'retry').length;
+  const m = all.length - c - r;
+  const missed = all.filter(q => S.res[q] !== 'correct');
+  const when = new Date().toLocaleString();
+  let h = `<h2>${S.name ? esc(S.name) + ' — ' : ''}Results</h2>
+    <div style="color:var(--muted);font-size:14px">${when}</div>
+    <div class="scorebig">${Math.round(100 * c / all.length)}%</div>
+    <div style="color:var(--muted)">correct on the first try</div>
+    <div class="bar"><div><b style="color:var(--good)">${c}</b>first-try correct</div><div><b style="color:#5a9e70">${r}</b>correct after a retry</div><div><b style="color:var(--bad)">${m}</b>revealed or skipped</div></div>`;
+  if (missed.length) {
+    h += `<h3>Review</h3>`;
+    missed.forEach(q => {
+      const Q = QUESTIONS[q], st = S.res[q];
+      const lab = st === 'retry' ? ['Solved after retry', '#5a9e70'] : st === 'revealed' ? ['Answer revealed', 'var(--bad)'] : ['Skipped', 'var(--bad)'];
+      h += `<div class="review"><div class="tagline" style="color:${lab[1]}">${lab[0]}</div><b>${esc(Q.title)}</b><div style="font-size:14px;margin-top:4px">${Q.scenario}</div>
+        <table>${Q.parts.map(p => `<tr><td>${esc(p.prompt)}</td><td><b>${p.answer.map(esc).join(', ')}</b></td></tr>`).join('')}</table>${sqlHTML(Q.sql)}</div>`;
+    });
+  } else h += `<p><b>Perfect round!</b> You planned every query correctly on the first try.</p>`;
+  const retryable = all.filter(q => S.res[q] !== 'correct');
+  h += `<div class="actions" style="margin-top:20px">
+      ${retryable.length ? `<button class="btn" id="again">Retry the ones I missed (${retryable.length})</button>` : ''}
+      <button class="btn ghost" id="restart">Start over</button>
+      <button class="btn soft" id="print">Print / save as PDF</button></div>`;
+  $('#resPanel').innerHTML = h;
+  show('results');
+  $('#prog').textContent = 'Finished';
+  if ($('#again')) $('#again').onclick = () => startRound(retryable);
+  $('#restart').onclick = () => { S.res = {}; startRound(QUESTIONS.map((_, i) => i)); };
+  $('#print').onclick = () => window.print();
+  window.scrollTo(0, 0);
+}
+
+/* ---------------- Boot ---------------- */
+buildERD(); setScale(1);
+$('#go').onclick = () => { S.name = $('#nm').value.trim(); startRound(QUESTIONS.map((_, i) => i)); };
+$('#nm').addEventListener('keydown', e => { if (e.key === 'Enter') $('#go').click(); });
+window.addEventListener('resize', () => { if ($('#play').classList.contains('on')) fit(); });
+</script>
+</body>
+</html>
