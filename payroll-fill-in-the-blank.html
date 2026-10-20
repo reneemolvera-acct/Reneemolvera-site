@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sparkle Bright Payroll Challenge</title>
+<style>
+  :root{
+    --bg:#eef5fb; --card:#ffffff; --ink:#1d2b3a; --muted:#5a6b7d;
+    --brand:#1f6fb2; --brand-2:#0e4f86; --chip:#e3f0fb; --chip-b:#9cc6ea;
+    --ok:#1f8a4c; --ok-bg:#e3f6ea; --bad:#c0392b; --bad-bg:#fbe7e4; --line:#d6e2ee;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);
+       background:linear-gradient(180deg,#d9ecfa 0%,var(--bg) 240px);line-height:1.6}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+  header{text-align:center;margin-bottom:18px}
+  header h1{margin:0 0 4px;font-size:clamp(1.5rem,4vw,2.2rem);color:var(--brand-2)}
+  header p{margin:0;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+        box-shadow:0 2px 10px rgba(20,60,100,.06);margin-bottom:18px}
+  h2{margin:0 0 10px;font-size:1.1rem;color:var(--brand-2)}
+  .directions{color:var(--muted);margin:0}
+  .bank-wrap{position:sticky;top:0;z-index:5}
+  #bank{display:flex;flex-wrap:wrap;gap:8px;min-height:52px;padding:10px;border:2px dashed var(--chip-b);
+        border-radius:10px;background:#f7fbff;transition:background .15s}
+  #bank.over{background:#e6f2fd}
+  .chip{display:inline-block;padding:6px 12px;border-radius:999px;background:var(--chip);border:1px solid var(--chip-b);
+        font-weight:600;font-size:.95rem;cursor:grab;user-select:none;touch-action:none;white-space:nowrap;
+        transition:transform .1s, box-shadow .1s}
+  .chip:hover{box-shadow:0 2px 6px rgba(31,111,178,.25)}
+  .chip.selected{outline:3px solid var(--brand);outline-offset:1px}
+  .chip.dragging-src{opacity:.35}
+  .ghost{position:fixed;pointer-events:none;z-index:1000;transform:translate(-50%,-50%) rotate(-2deg);
+         box-shadow:0 8px 18px rgba(0,0,0,.2);cursor:grabbing}
+  .story p{margin:0 0 14px;font-size:1.05rem}
+  .blank{display:inline-flex;align-items:center;gap:4px;min-width:170px;min-height:34px;vertical-align:middle;
+         padding:2px 6px;margin:2px 2px;border-bottom:2px solid var(--brand);background:#f3f8fd;border-radius:6px 6px 0 0;
+         cursor:pointer;transition:background .15s}
+  .blank .num{font-size:.75rem;font-weight:700;color:var(--brand);}
+  .blank.over{background:#d7eafb}
+  .blank.correct{background:var(--ok-bg);border-color:var(--ok)}
+  .blank.correct .chip{background:#c9efd7;border-color:var(--ok)}
+  .blank.wrong{background:var(--bad-bg);border-color:var(--bad)}
+  .blank.wrong .chip{background:#f6cfc9;border-color:var(--bad)}
+  .blank .chip{margin:0}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
+  button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 18px;cursor:pointer}
+  .primary{background:var(--brand);color:#fff}
+  .primary:hover{background:var(--brand-2)}
+  .secondary{background:#e6edf4;color:var(--ink)}
+  .secondary:hover{background:#d6e1ec}
+  #result{text-align:center;font-weight:700;font-size:1.1rem;margin-top:12px;min-height:1.6em}
+  #result.win{color:var(--ok)}
+  .hint{font-size:.85rem;color:var(--muted);text-align:center;margin-top:6px}
+  @media (max-width:600px){ .blank{min-width:130px} .story p{font-size:1rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sparkle Bright Payroll Challenge</h1>
+    <p>Payroll Processing Cycle Vocabulary</p>
+  </header>
+
+  <div class="card">
+    <h2>Directions</h2>
+    <p class="directions">Drag each term from the word bank into the correct blank in the story. You can also tap a term, then tap a blank. Not every word will be used. Tap a filled blank to send its word back. When you're done, click <strong>Check Answers</strong>.</p>
+  </div>
+
+  <div class="card bank-wrap">
+    <h2>Word Bank</h2>
+    <div id="bank" aria-label="Word bank"></div>
+  </div>
+
+  <div class="card story" id="story">
+    <h2>Payroll at Sparkle Bright Window Washing</h2>
+    <p>Sparkle Bright Window Washing is a small company owned by Maria Gonzalez. When Maria hired Tyler Brooks as a new window washer, office manager Denise Carter had Tyler complete a <span class="blank" data-answer="W-4"></span> so the correct amount of federal income tax would be withheld from his pay. Tyler wanted his pay sent straight to his bank account, so he also signed a <span class="blank" data-answer="Direct-deposit authorization"></span>. Denise then entered Tyler's pay rate, tax information, and bank details into the <span class="blank" data-answer="Employee masterfile"></span>, the main record payroll uses to pay each employee.</p>
+    <p>In June, window washer Ashley Park left the company to attend college. On Ashley's last day, Denise prepared a <span class="blank" data-answer="Termination notice"></span> so that payroll clerk Jamal Reed would remove Ashley from payroll before the next pay period.</p>
+    <p>Each week, crew leader Sam Nguyen reviews the hours his crew records. Before Jamal can process payroll, he must receive an <span class="blank" data-answer="Approved timesheet"></span> signed by Sam for each window washer. When a large office-building job ran late, Tyler worked six extra hours on Friday. Because Sam had signed an <span class="blank" data-answer="Overtime authorization"></span> before the job started, Jamal knew the extra hours were allowed.</p>
+    <p>Jamal uses the approved hours and pay rates to calculate gross pay. He then subtracts taxes and voluntary deductions to find each employee's <span class="blank" data-answer="Net pay"></span>. He lists gross pay, deductions, and net pay for every employee on the <span class="blank" data-answer="Payroll register"></span>, which Maria reviews and approves. Maria then transfers the exact total of net pay into the company's <span class="blank" data-answer="Imprest account"></span>, a separate bank account used only for payroll. Finally, each employee, including Tyler, receives an <span class="blank" data-answer="Employee earnings statement"></span> showing his or her hours, gross pay, deductions, and net pay for the period.</p>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button class="primary" id="check">Check Answers</button>
+      <button class="secondary" id="reset">Start Over</button>
+    </div>
+    <div id="result" aria-live="polite"></div>
+    <div class="hint">Green = correct, red = try again. Drag a red word back to the bank and try a different term.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const WORDS = [
+    "W-4","Direct-deposit authorization","Employee masterfile","Termination notice","Approved timesheet",
+    "Overtime authorization","Net pay","Payroll register","Imprest account","Employee earnings statement",
+    // distractors from the key terms list
+    "Deduction authorization","Gross pay","Job time tickets","Tax liability report",
+    "Benefit enrollment form","Labor distribution report","Approved personnel action form","FICA"
+  ];
+  const bank = document.getElementById('bank');
+  const blanks = Array.from(document.querySelectorAll('.blank'));
+  const result = document.getElementById('result');
+  let selected = null;
+
+  blanks.forEach((b,i)=>{ b.innerHTML = '<span class="num">'+(i+1)+'</span>'; b.tabIndex = 0; });
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  function makeChip(w){ const c=document.createElement('span'); c.className='chip'; c.textContent=w; c.dataset.word=w; c.tabIndex=0; attach(c); return c; }
+  function chipIn(blank){ return blank.querySelector('.chip'); }
+  function clearMarks(){ blanks.forEach(b=>b.classList.remove('correct','wrong')); result.textContent=''; result.className=''; }
+  function deselect(){ if(selected){selected.classList.remove('selected'); selected=null;} }
+
+  function build(){
+    bank.innerHTML=''; blanks.forEach(b=>{ const c=chipIn(b); if(c) c.remove(); });
+    shuffle(WORDS.slice()).forEach(w=>bank.appendChild(makeChip(w)));
+    clearMarks(); deselect();
+  }
+
+  function place(chip, target){
+    clearMarks();
+    const from = chip.parentElement;
+    if(target === bank){ bank.appendChild(chip); return; }
+    if(target.classList.contains('blank')){
+      const existing = chipIn(target);
+      if(existing && existing !== chip){
+        if(from && from.classList.contains('blank')) from.appendChild(existing); else bank.appendChild(existing);
+      }
+      target.appendChild(chip);
+    }
+  }
+
+  function dropTargetAt(x,y){
+    const el = document.elementFromPoint(x,y); if(!el) return null;
+    return el.closest('.blank') || el.closest('#bank');
+  }
+
+  function attach(chip){
+    chip.addEventListener('pointerdown', e=>{
+      if(e.button!==0) return;
+      e.preventDefault();
+      const sx=e.clientX, sy=e.clientY; let ghost=null, over=null, moved=false;
+      chip.setPointerCapture(e.pointerId);
+      const move = ev=>{
+        if(!moved && Math.hypot(ev.clientX-sx, ev.clientY-sy) < 6) return;
+        if(!moved){ moved=true; deselect(); ghost=chip.cloneNode(true); ghost.classList.add('ghost'); document.body.appendChild(ghost); chip.classList.add('dragging-src'); }
+        ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
+        const t = dropTargetAt(ev.clientX, ev.clientY);
+        if(t!==over){ if(over) over.classList.remove('over'); over=t; if(over) over.classList.add('over'); }
+      };
+      const up = ev=>{
+        chip.removeEventListener('pointermove',move); chip.removeEventListener('pointerup',up); chip.removeEventListener('pointercancel',up);
+        if(over) over.classList.remove('over');
+        if(moved){
+          ghost.remove(); chip.classList.remove('dragging-src');
+          const t = dropTargetAt(ev.clientX, ev.clientY);
+          if(t) place(chip,t);
+        } else {
+          // tap: if inside a blank, send back to bank; otherwise select
+          if(chip.parentElement.classList.contains('blank')){ place(chip, bank); deselect(); }
+          else if(selected===chip){ deselect(); }
+          else { deselect(); selected=chip; chip.classList.add('selected'); }
+        }
+      };
+      chip.addEventListener('pointermove',move); chip.addEventListener('pointerup',up); chip.addEventListener('pointercancel',up);
+    });
+    chip.addEventListener('keydown', e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault();
+        if(chip.parentElement.classList.contains('blank')) place(chip,bank);
+        else { deselect(); selected=chip; chip.classList.add('selected'); }
+      }
+    });
+  }
+
+  blanks.forEach(b=>{
+    const fill = ()=>{ if(selected){ place(selected,b); deselect(); } };
+    b.addEventListener('click', e=>{ if(e.target.closest('.chip')) return; fill(); });
+    b.addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target===b){ e.preventDefault(); fill(); } });
+  });
+
+  document.getElementById('check').addEventListener('click', ()=>{
+    let right=0, filled=0;
+    blanks.forEach(b=>{
+      b.classList.remove('correct','wrong');
+      const c=chipIn(b); if(!c) return; filled++;
+      if(c.dataset.word===b.dataset.answer){ b.classList.add('correct'); right++; } else b.classList.add('wrong');
+    });
+    if(right===blanks.length){ result.textContent='Perfect! 10 out of 10. You know your payroll cycle!'; result.className='win'; }
+    else { result.textContent='Score: '+right+' out of '+blanks.length + (filled<blanks.length ? ' ('+(blanks.length-filled)+' blank'+(blanks.length-filled===1?'':'s')+' still empty)' : ''); result.className=''; }
+  });
+  document.getElementById('reset').addEventListener('click', build);
+
+  build();
+})();
+</script>
+</body>
+</html>
